@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jersey Recovery Games</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
+  body {
+    background: #ffe6f0;
+    font-family: 'Comic Neue', cursive, sans-serif;
+    color: #d6336c;
+    text-align: center;
+    margin: 0; padding: 0;
+  }
+  h1, h2 {
+    font-weight: 700;
+    margin: 1rem 0;
+  }
+  button {
+    background: #ff85a2;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 30px;
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin: 1rem 0.5rem;
+  }
+  button:hover {
+    background: #e95276;
+  }
+  input[type=text], input[type=number] {
+    font-size: 1.2rem;
+    padding: 10px;
+    border: 2px solid #ff85a2;
+    border-radius: 15px;
+    width: 250px;
+    text-align: center;
+    margin: 0.5rem 0;
+  }
+  .screen {
+    display: none;
+    max-width: 600px;
+    margin: 30px auto;
+    background: #fff0f6;
+    border-radius: 15px;
+    padding: 20px 30px 40px;
+    box-shadow: 0 0 15px rgba(214, 51, 108, 0.3);
+  }
+  .visible {
+    display: block;
+  }
+  #message {
+    margin: 15px 0;
+    font-weight: 600;
+  }
+  /* Cute Anime Eyes animation */
+  .anime-eyes {
+    margin: 20px auto 40px;
+    width: 160px;
+    height: 80px;
+    position: relative;
+  }
+  .eye {
+    background: #fff;
+    border: 4px solid #d6336c;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: inline-block;
+    margin: 0 10px;
+    position: relative;
+  }
+  .pupil {
+    background: #d6336c;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    animation: pupil-move 2s ease-in-out infinite alternate;
+  }
+  @keyframes pupil-move {
+    0% { left: 15px; top: 25px; }
+    100% { left: 30px; top: 20px; }
+  }
+
+  /* Sudoku styling */
+  table.sudoku-table {
+    border-collapse: collapse;
+    margin: 10px auto;
+  }
+  table.sudoku-table td {
+    border: 1px solid #d6336c;
+    width: 36px;
+    height: 36px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 700;
+    font-size: 1.3rem;
+  }
+  table.sudoku-table td.fixed-cell {
+    background: #fce4ec;
+    color: #d6336c;
+  }
+  table.sudoku-table td input {
+    width: 34px;
+    height: 34px;
+    font-size: 1.3rem;
+    text-align: center;
+    border: none;
+    outline: none;
+    font-weight: 700;
+    color: #d6336c;
+    background: #ffe6f0;
+    border-radius: 8px;
+  }
+  /* Thicker borders for Sudoku 3x3 squares */
+  table.sudoku-table tr:nth-child(3n) td {
+    border-bottom: 3px solid #d6336c;
+  }
+  table.sudoku-table td:nth-child(3n) {
+    border-right: 3px solid #d6336c;
+  }
+
+  /* Timer */
+  #timerDisplay {
+    font-size: 1.4rem;
+    margin: 10px 0 20px;
+    font-weight: 700;
+  }
+
+  /* Pink banner for apology message */
+  #apologyBanner {
+    background: #ffcce1;
+    border: 2px dashed #d6336c;
+    color: #d6336c;
+    padding: 12px 20px;
+    margin: 10px auto;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  /* Confetti container */
+  #confetti-canvas, #fireworks-canvas {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+  }
+</style>
+</head>
+<body>
+
+<div id="introScreen" class="screen visible">
+  <div class="anime-eyes">
+    <div class="eye"><div class="pupil"></div></div>
+    <div class="eye"><div class="pupil"></div></div>
+  </div>
+  <h1>Do you want your jersey back?</h1>
+  <button id="startBtn">Yes</button>
+</div>
+
+<div id="rulesScreen" class="screen">
+  <h2>Rules</h2>
+  <p>Complete all these games correctly and then you will receive the passcode to get your jersey back.</p>
+  <button id="beginGameBtn">Start Game</button>
+</div>
+
+<!-- Number Guess Game -->
+<div id="numberGuessScreen" class="screen">
+  <h2>Game 1: Guess the Number</h2>
+  <p>Enter a number between 1 - 500</p>
+  <input type="number" id="guessInput" min="1" max="500" />
+  <div>
+    <button id="submitGuessBtn">Submit</button>
+  </div>
+  <div id="guessMessage" style="color:#d6336c; font-weight:bold; margin-top:10px;"></div>
+  <div id="apologyBanner">If you want a hint then please message the host with a minimum 150 word apology of all the times you made her cry.</div>
+</div>
+
+<!-- Sentence Game -->
+<div id="sentenceGameScreen" class="screen">
+  <h2>Game 2: Type the Sentence Exactly</h2>
+  <p><em>Hint: It’s a heartfelt apology</em></p>
+  <input type="text" id="sentenceInput" style="width: 90%; max-width: 500px;" />
+  <div>
+    <button id="submitSentenceBtn">Submit</button>
+  </div>
+  <div id="sentenceMessage" style="color:#d6336c; font-weight:bold; margin-top:10px;"></div>
+</div>
+
+<!-- Math Game -->
+<div id="mathGameScreen" class="screen">
+  <h2>Game 3: Hard Math Question</h2>
+  <p>What is (13 × 7) + (48 ÷ 6) - 9?</p>
+  <input type="number" id="mathInput" />
+  <div>
+    <button id="submitMathBtn">Submit</button>
+  </div>
+  <div id="mathMessage" style="color:#d6336c; font-weight:bold; margin-top:10px;"></div>
+</div>
+
+<!-- Sudoku Game -->
+<div id="gameScreen" class="screen">
+  <h2>Game 4: Sudoku (Medium Level)</h2>
+  <div id="timerDisplay">07:00</div>
+  <div id="message" style="font-weight:bold;"></div>
+  <div id="sudokuContainer"></div>
+  <button id="checkSudokuBtn" style="margin-top: 15px; background:#e95276;">Check Sudoku</button>
+</div>
+
+<!-- Final Congratulations -->
+<div id="finalScreen" class="screen">
+  <h1>🎉 Congratulations!! 🎉</h1>
+  <h2>The password is: <span style="color:#e95276; font-weight:900;">sorry</span></h2>
+  <p>Please message the host this password to arrange for a collection.</p>
+</div>
+
+<!-- Confetti & Fireworks Canvas -->
+<canvas id="confetti-canvas"></canvas>
+<canvas id="fireworks-canvas"></canvas>
+
+<script>
+// ----------- Variables and Elements -----------
+const introScreen = document.getElementById('introScreen');
+const startBtn = document.getElementById('startBtn');
+const rulesScreen = document.getElementById('rulesScreen');
+const beginGameBtn = document.getElementById('beginGameBtn');
+
+const numberGuessScreen = document.getElementById('numberGuessScreen');
+const guessInput = document.getElementById('guessInput');
+const submitGuessBtn = document.getElementById('submitGuessBtn');
+const guessMessage = document.getElementById('guessMessage');
+const apologyBanner = document.getElementById('apologyBanner');
+
+const sentenceGameScreen = document.getElementById('sentenceGameScreen');
+const sentenceInput = document.getElementById('sentenceInput');
+const submitSentenceBtn = document.getElementById('submitSentenceBtn');
+const sentenceMessage = document.getElementById('sentenceMessage');
+
+const mathGameScreen = document.getElementById('mathGameScreen');
+const mathInput = document.getElementById('mathInput');
+const submitMathBtn = document.getElementById('submitMathBtn');
+const mathMessage = document.getElementById('mathMessage');
+
+const gameScreen = document.getElementById('gameScreen');
+const sudokuContainer = document.getElementById('sudokuContainer');
+const timerDisplay = document.getElementById('timerDisplay');
+const message = document.getElementById('message');
+const checkSudokuBtn = document.getElementById('checkSudokuBtn');
+
+const finalScreen = document.getElementById('finalScreen');
+
+let incorrectGuesses = 0;
+const correctNumber = 289;
+const correctSentence = "I didn’t deserve anamika, I shouldn’t have disrespected or betrayed her";
+const correctMathAnswer = (13 * 7) + (48 / 6) - 9; // = 91 + 8 - 9 = 90
+
+// Sudoku variables
+let timeLeft = 420; // 7 minutes
+let timer;
+let sudokuPuzzle, sudokuSolution;
+
+// ----------- Event Listeners -----------
+
+startBtn.addEventListener('click', () => {
+  introScreen.classList.remove('visible');
+  rulesScreen.classList.add('visible');
+});
+
+beginGameBtn.addEventListener('click', () => {
+  rulesScreen.classList.remove('visible');
+  startNumberGuessGame();
+});
+
+submitGuessBtn.addEventListener('click', handleGuessSubmit);
+
+submitSentenceBtn.addEventListener('click', handleSentenceSubmit);
+
+submitMathBtn.addEventListener('click', handleMathSubmit);
+
+checkSudokuBtn.addEventListener('click', checkSudokuCompletion);
+
+// ----------- Game Functions -----------
+
+function startNumberGuessGame() {
+  incorrectGuesses = 0;
+  guessInput.value = '';
+  guessMessage.textContent = '';
+  numberGuessScreen.classList.add('visible');
+  sentenceGameScreen.classList.remove('visible');
+  mathGameScreen.classList.remove('visible');
+  gameScreen.classList.remove('visible');
+  finalScreen.classList.remove('visible');
+}
+
+function handleGuessSubmit() {
+  const guess = parseInt(guessInput.value);
+  if (isNaN(guess) || guess < 1 || guess > 500) {
+    guessMessage.textContent = "Please enter a valid number between 1 and 500.";
+    return;
+  }
+  if (guess === correctNumber) {
+    guessMessage.textContent = "Correct! Moving to the next game...";
+    setTimeout(() => {
+      numberGuessScreen.classList.remove('visible');
+      startSentenceGame();
+    }, 1500);
+  } else {
+    incorrectGuesses++;
+    guessMessage.textContent = "Wrong guess. Try again.";
+    if (incorrectGuesses === 5) {
+      alert("For extra hint, write a minimum 150 word apology for everything you did that made the host cry and send it to her.");
+    }
+  }
+}
+
+function startSentenceGame() {
+  sentenceInput.value = '';
+  sentenceMessage.textContent = '';
+  sentenceGameScreen.classList.add('visible');
+  mathGameScreen.classList.remove('visible');
+  gameScreen.classList.remove('visible');
+  finalScreen.classList.remove('visible');
+}
+
+function handleSentenceSubmit() {
+  const sentence = sentenceInput.value.trim();
+  if (sentence === correctSentence) {
+    sentenceMessage.textContent = "Correct! Moving to the next game...";
+    setTimeout(() => {
+      sentenceGameScreen.classList.remove('visible');
+      startMathGame();
+    }, 1500);
+  } else {
+    sentenceMessage.textContent = "Incorrect sentence. Please try again.";
+  }
+}
+
+function startMathGame() {
+  mathInput.value = '';
+  mathMessage.textContent = '';
+  mathGameScreen.classList.add('visible');
+  gameScreen.classList.remove('visible');
+  finalScreen.classList.remove('visible');
+}
+
+function handleMathSubmit() {
+  const answer = Number(mathInput.value);
+  if (answer === correctMathAnswer) {
+    mathMessage.textContent = "Correct! Moving to the final game...";
+    setTimeout(() => {
+      mathGameScreen.classList.remove('visible');
+      startSudokuGame();
+    }, 1500);
+  } else {
+    mathMessage.textContent = "Wrong answer. Try again.";
+  }
+}
+
+// ----------- Sudoku Game -----------
+
+const mediumPuzzle = [
+  [0,0,0,2,6,0,7,0,1],
+  [6,8,0,0,7,0,0,9,0],
+  [1,9,0,0,0,4,5,0,0],
+  [8,2,0,1,0,0,0,4,0],
+  [0,0,4,6,0,2,9,0,0],
+  [0,5,0,0,0,3,0,2,8],
+  [0,0,9,3,0,0,0,7,4],
+  [0,4,0,0,5,0,0,3,6],
+  [7,0,3,0,1,8,0,0,0]
+];
+
+const mediumSolution = [
+  [4,3,5,2,6,9,7,8,1],
+  [6,8,2,5,7,1,4,9,3],
+  [1,9,7,8,3,4,5,6,2],
+  [8,2,6,1,9,5,3,4,7],
+  [3,7,4,6,8,2,9,1,5],
+  [9,5,1,7,4,3,6,2,8],
+  [5,1,9,3,2,6,8,7,4],
+  [2,4,8,9,5,7,1,3,6],
+  [7,6,3,4,1,8,2,5,9]
+];
+
+function startSudokuGame() {
+  sudokuPuzzle = JSON.parse(JSON.stringify(mediumPuzzle));
+  sudokuSolution = mediumSolution;
+  timeLeft = 420; // reset timer
+  renderSudoku();
+  gameScreen.classList.add('visible');
+  finalScreen.classList.remove('visible');
+  message.textContent = '';
+  startTimer();
+}
+
+function renderSudoku() {
+  sudokuContainer.innerHTML = '';
+  const table = document.createElement('table');
+  table.classList.add('sudoku-table');
+
+  for(let r=0; r<9; r++) {
+    const row = document.createElement('tr');
+    for(let c=0; c<9; c++) {
+      const cell = document.createElement('td');
+      if(sudokuPuzzle[r][c] === 0) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 1;
+        input.dataset.row = r;
+        input.dataset.col = c;
+        input.autocomplete = 'off';
+        input.addEventListener('input', (e) => {
+          const val = e.target.value;
+          if(!/^[1-9]$/.test(val)) {
+            e.target.value = '';
+            return;
+          }
+          // Optional: could do instant feedback here or just on check button
+        });
+        cell.appendChild(input);
+      } else {
+        cell.textContent = sudokuPuzzle[r][c];
+        cell.classList.add('fixed-cell');
+      }
+      row.appendChild(cell);
+    }
+    table.appendChild(row);
+  }
+  sudokuContainer.appendChild(table);
+}
+
+function checkSudokuCompletion() {
+  // Validate the sudoku inputs against solution
+  const inputs = sudokuContainer.querySelectorAll('input');
+  let allCorrect = true;
+  for (const input of inputs) {
+    const r = parseInt(input.dataset.row);
+    const c = parseInt(input.dataset.col);
+    const val = input.value;
+    if (val !== sudokuSolution[r][c].toString()) {
+      allCorrect = false;
+      input.style.backgroundColor = '#ffb6c1'; // light pink for wrong
+    } else {
+      input.style.backgroundColor = '#d0f0c0'; // light green for correct
+    }
+  }
+
+  if(allCorrect) {
+    clearInterval(timer);
+    message.textContent = "Sudoku completed! You passed all games!";
+    startFireworks();
+    setTimeout(() => {
+      gameScreen.classList.remove('visible');
+      finalScreen.classList.add('visible');
+    }, 3500);
+  } else {
+    message.textContent = "Some inputs are incorrect or missing. Keep trying!";
+  }
+}
+
+function startTimer() {
+  updateTimerDisplay();
+  timer = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft === 30) {
+      message.textContent = "Last 30 seconds remaining before having to start again!";
+    }
+    if(timeLeft <= 0) {
+      clearInterval(timer);
+      alert("Time is up! A new Sudoku puzzle will start now.");
+      startSudokuGame(); // restart with fresh puzzle
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const mins = Math.floor(timeLeft/60);
+  const secs = timeLeft % 60;
+  timerDisplay.textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+}
+
+// ----------- Confetti & Fireworks (using canvas) -----------
+
+const confettiCanvas = document.getElementById('confetti-canvas');
+const fireworksCanvas = document.getElementById('fireworks-canvas');
+confettiCanvas.width = window.innerWidth;
+confettiCanvas.height = window.innerHeight;
+fireworksCanvas.width = window.innerWidth;
+fireworksCanvas.height = window.innerHeight;
+
+function startConfetti() {
+  // Simple confetti effect using canvas
+  // We use a small library style confetti effect here:
+  let duration = 3000;
+  let end = Date.now() + duration;
+  let ctx = confettiCanvas.getContext('2d');
+  let confettis = [];
+
+  for(let i=0; i<150; i++) {
+    confettis.push({
+      x: Math.random()*confettiCanvas.width,
+      y: Math.random()*confettiCanvas.height - confettiCanvas.height,
+      r: Math.random()*6 + 4,
+      d: Math.random()*duration,
+      color: ['#d6336c','#ff85a2','#ffcce1','#ffbad2'][Math.floor(Math.random()*4)],
+      tilt: Math.random()*10 - 10,
+      tiltAngleIncremental: Math.random()*0.07 + 0.05,
+      tiltAngle: 0
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    confettis.forEach(c => {
+      ctx.beginPath();
+      ctx.lineWidth = c.r / 2;
+      ctx.strokeStyle = c.color;
+      ctx.moveTo(c.x + c.tilt + c.r/2, c.y);
+      ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r/2);
+      ctx.stroke();
+    });
+  }
+
+  function update() {
+    let now = Date.now();
+    if(now > end) {
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      return;
+    }
+    confettis.forEach(c => {
+      c.tiltAngle += c.tiltAngleIncremental;
+      c.y += (Math.cos(c.d) + 3 + c.r/2)/2;
+      c.x += Math.sin(c.d);
+      c.tilt = Math.sin(c.tiltAngle) * 15;
+      if(c.y > confettiCanvas.height) {
+        c.x = Math.random()*confettiCanvas.width;
+        c.y = -20;
+      }
+    });
+    draw();
+    requestAnimationFrame(update);
+  }
+  update();
+}
+
+function startFireworks() {
+  // Very simple fireworks animation (circles expanding and fading)
+  let ctx = fireworksCanvas.getContext('2d');
+  let particles = [];
+
+  function random(min,max) {
+    return Math.random() * (max-min) + min;
+  }
+
+  function createParticle() {
+    return {
+      x: random(fireworksCanvas.width*0.3, fireworksCanvas.width*0.7),
+      y: random(fireworksCanvas.height*0.2, fireworksCanvas.height*0.6),
+      radius: random(2,4),
+      color: `hsl(${Math.floor(random(0,360))}, 100%, 75%)`,
+      alpha: 1,
+      decay: random(0.005, 0.01),
+      speedX: random(-2, 2),
+      speedY: random(-2, 2)
+    };
+  }
+
+  for(let i=0; i<100; i++) {
+    particles.push(createParticle());
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+    particles.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${hexToRgb(p.color)}, ${p.alpha})`;
+      ctx.fill();
+
+      p.x += p.speedX;
+      p.y += p.speedY;
+      p.alpha -= p.decay;
+      if(p.alpha <= 0) {
+        particles[i] = createParticle();
+      }
+    });
+  }
+
+  function hexToRgb(hsl) {
+    // Convert HSL to RGB string for canvas fillStyle
+    // Approximation using hsl => rgb string
+    // Just use hsl for now in fillStyle:
+    return hsl; // Already in hsl, canvas accepts it directly
+  }
+
+  function loop() {
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+
+  // Clear fireworks after 4 seconds
+  setTimeout(() => {
+    ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+  }, 4000);
+}
+
+// ----------- Confetti triggers after each game completion -----------
+
+function showConfettiAndNext(nextFunc) {
+  startConfetti();
+  setTimeout(() => {
+    confettiCanvas.getContext('2d').clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+    nextFunc();
+  }, 3000);
+}
+
+// Modify the game progressions to show confetti:
+
+submitGuessBtn.removeEventListener('click', handleGuessSubmit);
+submitGuessBtn.addEventListener('click', () => {
+  const guess = parseInt(guessInput.value);
+  if (isNaN(guess) || guess < 1 || guess > 500) {
+    guessMessage.textContent = "Please enter a valid number between 1 and 500.";
+    return;
+  }
+  if (guess === correctNumber) {
+    guessMessage.textContent = "Correct! 🎉";
+    showConfettiAndNext(() => {
+      numberGuessScreen.classList.remove('visible');
+      startSentenceGame();
+    });
+  } else {
+    incorrectGuesses++;
+    guessMessage.textContent = "Wrong guess. Try again.";
+    if (incorrectGuesses === 5) {
